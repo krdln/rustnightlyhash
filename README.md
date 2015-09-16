@@ -25,7 +25,7 @@ fc4d566b432d48933e27dd65a973c936b564d6e9 2015-09-16
 
 ## Date handling
 
-Both the input and output dates are in considered to be
+Both the input and output dates are considered to be
 consistent with builds' start times reported by a buildbot,
 which probably are in UTC, so they may differ from the dates in your timezone.
 
