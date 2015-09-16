@@ -10,5 +10,4 @@ Usage:
 Options:
   -h --help         Show this screen.
   -d --output-date  Displays the date after the hash.
-  -j --json         Output as json (unimplemented).
 ```
