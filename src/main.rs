@@ -1,4 +1,4 @@
-#![feature(plugin, result_expect)]
+#![feature(plugin)]
 #![plugin(docopt_macros)]
 extern crate serde_json;
 extern crate hyper;
