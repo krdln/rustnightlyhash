@@ -1,13 +1,14 @@
-#![feature(plugin)]
-#![plugin(docopt_macros)]
 extern crate serde_json;
 extern crate hyper;
+extern crate hyper_native_tls;
 extern crate time;
 extern crate rustc_serialize;
 extern crate docopt;
 
 use docopt::Docopt;
 use hyper::client::Client;
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
 use std::io::prelude::*;
 use serde_json::Value as Json;
 use std::error::Error;
@@ -26,20 +27,20 @@ fn http(c: &Client, id: Option<isize>) -> Result<Json, Box<Error>> {
 macro_rules! tryo{ ($e:expr) => (match $e { Some(e) => e, None => return None }) }
 
 fn parse(j: Json) -> Option<(String, time::Tm)> {
-    let seconds = tryo!( j.find("times").and_then(Json::as_array).and_then(|a|a.get(0)).and_then(Json::as_f64) );
+    let seconds = tryo!( j.get("times").and_then(Json::as_array).and_then(|a|a.get(0)).and_then(Json::as_f64) );
     let tm = time::at_utc(time::Timespec{ sec: seconds as i64, nsec: 0 });
-    let properties = tryo!( j.find("properties").and_then(Json::as_array) );
+    let properties = tryo!( j.get("properties").and_then(Json::as_array) );
     for p in properties {
         let p = tryo!(p.as_array());
-        match p.get(0).and_then(Json::as_string) {
-            Some("revision") => return Some((tryo!( p.get(1).and_then(Json::as_string).map(Into::into) ), tm)),
+        match p.get(0).and_then(Json::as_str) {
+            Some("revision") => return Some((tryo!( p.get(1).and_then(Json::as_str).map(Into::into) ), tm)),
             _ => ()
         }
     }
     return None
 }
 
-docopt!(Args derive Debug, "
+const USAGE: &'static str = "
 rustnightlyhash computes a git commit hash for a nightly from a given date
 in YYYY-MM-HH format.
 When given no date, it shows the hash for most recent nightly
@@ -51,7 +52,13 @@ Usage:
 Options:
   -h --help         Show this screen.
   -d --output-date  Displays the date after the hash.
-");
+";
+
+#[derive(Debug, RustcDecodable)]
+struct Args {
+    arg_date: String,
+    flag_output_date: bool,
+}
 
 fn display(&(ref hash, ref tm): &(String, time::Tm), args: &Args) {
     if args.flag_output_date {
@@ -62,9 +69,13 @@ fn display(&(ref hash, ref tm): &(String, time::Tm), args: &Args) {
 }
 
 fn main() {
-    let args: Args = Args::docopt().decode().unwrap_or_else(|e| e.exit());
+    let args: Args = Docopt::new(USAGE)
+        .and_then(|d| d.decode())
+        .unwrap_or_else(|e| e.exit());
     
-    let client = Client::new();
+    let ssl = NativeTlsClient::new().unwrap();
+    let connector = HttpsConnector::new(ssl);
+    let client = Client::with_connector(connector);
     
     // We compute tonight's hash even when the date is given. It's a kind of server sanity check.
     let tonightly = parse(http(&client, Some(-1)).expect("http error")).expect("json format error");

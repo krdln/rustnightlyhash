@@ -1,12 +1,12 @@
 [package]
-name = "rustnightlyhash"
-version = "0.1.0"
 authors = ["Michał Krasnoborski <mkrdln@gmail.com>"]
+name = "rustnightlyhash"
+version = "0.1.1"
 
 [dependencies]
-serde_json = "*"
-hyper = "*"
-time = "*"
-docopt = "*"
-docopt_macros = "*"
-rustc-serialize = "*"
+docopt = "0.7"
+hyper = "0.10.5"
+hyper-native-tls = "0.2.2"
+rustc-serialize = "0.3.23"
+serde_json = "0.9.9"
+time = "0.1.36"
